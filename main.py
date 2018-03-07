@@ -12,8 +12,13 @@ import numpy as np
 import sys
 import os
 import csv
+import itertools
+
 from sklearn.model_selection import KFold 
 from sklearn.metrics import mean_squared_error
+from helpers import *
+
+np.set_printoptions(suppress=True)
 
 # Import training data
 data = np.genfromtxt('train.csv', delimiter=',')
@@ -73,8 +78,69 @@ print("\n")
 # with a search over the different KFold values? Or will this 
 # become computationally intractable? We need to think about this. 
 
+# First let's iterate over potential regularization parameters (no cross validation)
 
+# First Attempt
+Lam1 = np.logspace(-3, 4, 8)
+Lam2 = np.logspace(-3, 4, 8)
+Lam3 = np.logspace(-3, 4, 8)
+Lam4 = np.logspace(-3, 4, 8)
+Lam5 = np.logspace(-3, 4, 8)
 
+# Second Attempt
+#Lam1 = np.logspace(-3, 2, 6)
+#Lam2 = np.logspace(-3, 2, 6)
+#Lam3 = np.logspace(-3, 2, 6)
+#Lam4 = np.logspace(-3, 2, 6)
+#Lam5 = np.logspace(-3, 2, 6)
+
+#sys.exit()
+
+lambda_combs = list(itertools.product(Lam1, Lam2, Lam3, Lam4, Lam5))
+errors = []
+rms_min = float('inf')
+opt_weights = []
+opt_lambda = []
+
+for tup in lambda_combs:
+    #print(np.array(tup))
+    #print(lambda_matrix(np.array(tup)))
+    
+    # compute the weight matrix
+    Lambda = lambda_matrix(np.array(tup))
+   
+    # TODO: Replace this with proper cross-validation. I'm just
+    #       doing it this was as an initial test to see if
+    #       the regularization can do better when chunked
+    A_train, A_test = np.split(A, [600]) # split @ 600 (ie 600 train, 300 test)
+    y_train, y_test = np.split(y, [600])
+
+    # compute LS estimates with regularization matrix
+    theta_ls_ridge = np.linalg.inv(A_train.T*A_train + Lambda)*A_train.T*y_train
+
+    # Compute predictions
+    y_pred = A_test*theta_ls_ridge
+
+    # And the RMSE
+    rms_err = mean_squared_error(y_test, y_pred)**0.5 
+    errors.append(rms_err)
+    #print(tup, " - Error: ", rms_err)
+
+    if rms_err < rms_min:
+        opt_weights = theta_ls_ridge
+        opt_lambda = tup
+        rms_min = rms_err
+
+#print(errors)
+print("Maximum Error: ", np.max(errors))
+print("Associated Tuple: ", lambda_combs[np.argmax(errors)])
+print("\n")
+print("Minimum Error: ", np.min(errors))
+print("Associated Tuple: ", lambda_combs[np.argmin(errors)])
+
+print("Optimal Weights: \n", opt_weights)
+print("Optimal Lambda: ", opt_lambda)
+print(rms_min)
 
 #############################
 #   Write Ouput to File     #
