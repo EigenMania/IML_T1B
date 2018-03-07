@@ -53,6 +53,27 @@ print("\n")
 print("RMS Error: ", rmse_ls)
 print("\n")
 
+# Idea. So basically we've got two methods to work with here. The cross-validation 
+# (using something like KFolds) prevents overfitting of the data, while the regularization 
+# parameter tempers the model complexity (by keeping the size of the parameters in check)
+# 
+# So basically we've got two choices. We need to choose an appropriate 'k' for the 
+# KFold cross validation. It may be worth trying LOOCV, but that could be too 
+# expensive. We should compare it agains other options (5, 10, etc...)
+#
+# We also need to choose regularization parameters. My theory is that we should 
+# actually try to choose a different regularization parameter for each of the 
+# types of features, because the exponential terms are very different from the
+# cosine terms, and we don't want the regularization parameter to trade off
+# between these two terms (like say we find lambda to be small because the exponential
+# terms are large, but then this reduces the predictive power of the cosine terms). 
+#
+# This is complicated, but we can perform a search over 5 different lambdas
+# for each regularization parameter. Question is, can we also couple this 
+# with a search over the different KFold values? Or will this 
+# become computationally intractable? We need to think about this. 
+
+
 
 
 #############################
