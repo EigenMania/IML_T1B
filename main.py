@@ -85,22 +85,20 @@ Lam1 = np.logspace(-3, 4, 8)
 Lam2 = np.logspace(-3, 4, 8)
 Lam3 = np.logspace(-3, 4, 8)
 Lam4 = np.logspace(-3, 4, 8)
-Lam5 = np.logspace(-3, 4, 8)
 
 # Second Attempt
-#Lam1 = np.logspace(-3, 2, 6)
-#Lam2 = np.logspace(-3, 2, 6)
-#Lam3 = np.logspace(-3, 2, 6)
-#Lam4 = np.logspace(-3, 2, 6)
-#Lam5 = np.logspace(-3, 2, 6)
+#Lam1 = np.logspace(-4, -2, 5)
+#Lam2 = np.logspace(1, 3, 5)
+#Lam3 = np.logspace(-4, -2, 5)
+#Lam4 = np.logspace(3, 5, 5)
 
-#sys.exit()
-
-lambda_combs = list(itertools.product(Lam1, Lam2, Lam3, Lam4, Lam5))
-errors = []
+lambda_combs = list(itertools.product(Lam1, Lam2, Lam3, Lam4))
 rms_min = float('inf')
+errors = []
 opt_weights = []
 opt_lambda = []
+
+k = 9 # 9 group cross validation
 
 for tup in lambda_combs:
     #print(np.array(tup))
@@ -108,28 +106,34 @@ for tup in lambda_combs:
     
     # compute the weight matrix
     Lambda = lambda_matrix(np.array(tup))
-   
+
+    kf = KFold(n_splits=k, shuffle=False) # define the split into 9 folds, use random shuffling
+    rms_vect = []
+
     # TODO: Replace this with proper cross-validation. I'm just
     #       doing it this was as an initial test to see if
     #       the regularization can do better when chunked
-    A_train, A_test = np.split(A, [600]) # split @ 600 (ie 600 train, 300 test)
-    y_train, y_test = np.split(y, [600])
+    for train_index, test_index in kf.split(A):
+        # Extract the training and test data
+        A_train, A_test = A[train_index,:], A[test_index,:]
+        y_train, y_test = y[train_index,:], y[test_index,:]
+            
+        # compute LS estimates with regularization matrix
+        theta_ls_ridge = np.linalg.inv(A_train.T*A_train + Lambda)*A_train.T*y_train
 
-    # compute LS estimates with regularization matrix
-    theta_ls_ridge = np.linalg.inv(A_train.T*A_train + Lambda)*A_train.T*y_train
+        # Compute predictions
+        y_pred = A_test*theta_ls_ridge
 
-    # Compute predictions
-    y_pred = A_test*theta_ls_ridge
-
-    # And the RMSE
-    rms_err = mean_squared_error(y_test, y_pred)**0.5 
-    errors.append(rms_err)
-    #print(tup, " - Error: ", rms_err)
-
-    if rms_err < rms_min:
+        # And the RMSE
+        rms_err = mean_squared_error(y_test, y_pred)**0.5 
+        rms_vect.append(rms_err)
+    
+    rms_mean = np.mean(rms_err) # compute average RMS error
+    errors.append(rms_mean) # keep track of all mean errors
+    if rms_mean < rms_min:
         opt_weights = theta_ls_ridge
         opt_lambda = tup
-        rms_min = rms_err
+        rms_min = rms_mean
 
 #print(errors)
 print("Maximum Error: ", np.max(errors))
@@ -145,7 +149,7 @@ print(rms_min)
 #############################
 #   Write Ouput to File     #
 #############################
-#np.savetxt('results.csv', rms_vect, fmt='%.12f', newline='\n', comments='')
+np.savetxt('results.csv', opt_weights, fmt='%.12f', newline='\n', comments='')
 
 
 
