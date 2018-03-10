@@ -8,3 +8,9 @@ def lambda_matrix(lambda_vect):
     v = np.append(v, 0) # add a zero so that we don't regularize bias term
     V = np.diag(v) # convert to diagonal matrix
     return V
+
+def lambda_matrix_v2(lam):
+    V = lam*np.identity(21)
+    V[20,20] = 0 # don't penalize bias term
+    return V
+

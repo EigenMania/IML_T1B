@@ -87,10 +87,13 @@ Lam3 = np.logspace(-3, 4, 8)
 Lam4 = np.logspace(-3, 4, 8)
 
 # Second Attempt
-#Lam1 = np.logspace(-4, -2, 5)
-#Lam2 = np.logspace(1, 3, 5)
-#Lam3 = np.logspace(-4, -2, 5)
-#Lam4 = np.logspace(3, 5, 5)
+#Lam1 = np.logspace(0, 2, 5)
+#Lam2 = np.logspace(2, 4, 5)
+#Lam3 = np.logspace(3, 5, 5)
+#Lam4 = np.logspace(-4, -2, 5)
+
+# Just constant lambda (for all variables)
+lambda_vect = np.logspace(0,2,100)
 
 lambda_combs = list(itertools.product(Lam1, Lam2, Lam3, Lam4))
 rms_min = float('inf')
@@ -98,14 +101,17 @@ errors = []
 opt_weights = []
 opt_lambda = []
 
-k = 9 # 9 group cross validation
+k = 10 # 9 group cross validation
 
-for tup in lambda_combs:
+#for tup in lambda_combs:
+for lam in lambda_vect:
+    
     #print(np.array(tup))
     #print(lambda_matrix(np.array(tup)))
     
     # compute the weight matrix
-    Lambda = lambda_matrix(np.array(tup))
+    #Lambda = lambda_matrix(np.array(tup))
+    Lambda = lambda_matrix_v2(lam)
 
     kf = KFold(n_splits=k, shuffle=False) # define the split into 9 folds, use random shuffling
     rms_vect = []
@@ -131,17 +137,19 @@ for tup in lambda_combs:
     rms_mean = np.mean(rms_err) # compute average RMS error
     errors.append(rms_mean) # keep track of all mean errors
     if rms_mean < rms_min:
-        opt_weights = theta_ls_ridge
-        opt_lambda = tup
+        # compute the weights with ALL of the data
+        opt_weights = np.linalg.inv(A.T*A + Lambda)*A.T*y
+        #opt_lambda = tup
+        opt_lambda = lam
         rms_min = rms_mean
 
 #print(errors)
-print("Maximum Error: ", np.max(errors))
-print("Associated Tuple: ", lambda_combs[np.argmax(errors)])
-print("\n")
-print("Minimum Error: ", np.min(errors))
-print("Associated Tuple: ", lambda_combs[np.argmin(errors)])
-
+#print("Maximum Error: ", np.max(errors))
+#print("Associated Tuple: ", lambda_combs[np.argmax(errors)])
+#print("\n")
+#print("Minimum Error: ", np.min(errors))
+#print("Associated Tuple: ", lambda_combs[np.argmin(errors)])
+#print("\n")
 print("Optimal Weights: \n", opt_weights)
 print("Optimal Lambda: ", opt_lambda)
 print(rms_min)
